@@ -16,6 +16,17 @@
       </plugin>
     </plugins>
   </build>
+  <distributionManagement>
+  	<repository>
+  	  <id>Releases</id>
+  	  <url>http://10.0.12.155:8081/nexus/content/repositories/releases/</url>
+  	</repository>
+    <snapshotRepository>
+      <id>Snapshots</id>
+ 	  <url>http://10.0.12.155:8081/nexus/content/repositories/snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
+  
   <dependencies>
 	<!-- https://mvnrepository.com/artifact/javax.servlet/javax.servlet-api -->
 	<dependency>
