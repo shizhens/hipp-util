@@ -41,21 +41,15 @@ public class HiAppContext implements ApplicationContextAware {
 	}
 
 	public String convertToRealPath(String fileName) {
-		System.out.println(fileName); 
-
 		String websiteRealPath = this.getServletContext().getRealPath("/");
 		String tenantRoot = this.getServletContext().getContextPath();
-		
-		System.out.println(websiteRealPath);
-		System.out.println(tenantRoot);
 		
 		String realPath = "";
 		if (fileName.startsWith(tenantRoot))
 			realPath = String.format("%s%s", websiteRealPath, fileName.substring(tenantRoot.length()));
 		else
 			realPath = String.format("%s%s", websiteRealPath, fileName);
-			
-		System.out.println("P3: " + realPath);
+
 		realPath = realPath.replace("/", File.separator);
 		realPath = realPath.replace("\\", File.separator);
 		realPath = realPath.replace(File.separator + File.separator, File.separator);
