@@ -6,7 +6,11 @@ package hiapp.utils.serviceresult;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
@@ -19,7 +23,7 @@ public class RecordsetResult extends ServiceResult {
 	private int total;
 	private int page;
 	private int pageSize;
-	private JsonArray rows = new JsonArray();
+	private List<Map<String, String>> rows = new ArrayList<Map<String, String>>();
 	/**
 	 * @return the total
 	 */
@@ -35,34 +39,47 @@ public class RecordsetResult extends ServiceResult {
 	/**
 	 * @return the rows
 	 */
-	public JsonArray getRows() {
+	public List<Map<String, String>> getRows() {
 		return rows;
 	}
 	/**
 	 * @param rows the rows to set
 	 */
 	public void setRows(ResultSet rs) {
-		JsonObject element = null;
 		ResultSetMetaData rsmd = null;
 		String columnName, columnValue = null;
 		try {
 		    rsmd = rs.getMetaData();
 		    while (rs.next()) {
-		        element = new JsonObject();
+		    	Map<String, String> row = new HashMap<String, String>();
 		        for (int i = 0; i < rsmd.getColumnCount(); i++) {
 		            columnName = rsmd.getColumnName(i + 1);
 		            columnValue = rs.getString(columnName);
-		            element.addProperty(columnName, columnValue);
+		            row.put(columnName, columnValue);
 		        }
-		        rows.add(element);
+		        rows.add(row);
 		    }
 		} catch (SQLException e) {
 		    e.printStackTrace();
 		}
 	}
-	public void setRows(List rowlist) {
+	public void setRows(List<?> rowlist) {
 		Gson gson = new Gson();
-		rows = gson.toJsonTree(rowlist, new TypeToken<List>() {}.getType()).getAsJsonArray();
+		@SuppressWarnings("rawtypes")
+		JsonArray arrayRows = gson.toJsonTree(rowlist, new TypeToken<List>() {}.getType()).getAsJsonArray();
+		for (JsonElement el : arrayRows) {
+			JsonObject obj = el.getAsJsonObject();
+			Set<Map.Entry<String, JsonElement>> entrySet = obj.entrySet();
+			if (entrySet.size() < 1) {
+				continue;
+			}
+			
+			Map<String, String> row = new HashMap<String, String>();
+			for (Map.Entry<String, JsonElement> ent : entrySet) {
+				row.put(ent.getKey(), ent.getValue().getAsString());
+			}
+			this.getRows().add(row);
+		}
 	}
 	/**
 	 * @return the page
