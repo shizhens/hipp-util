@@ -16,7 +16,8 @@ public enum ServiceResultCode {
 	EXECUTE_SQL_FAIL(10005, "执行SQL失败"),
 	INVALID_AUTHORITY(10006, "没有权限"),
 	FILE_EXISTS(10007, "文件已存在"),
-	FILE_FAIL(10008, "操作文件失败");
+	FILE_FAIL(10008, "操作文件失败"),
+	CUSTOMER_NONE(10009, "取不到客户");
 	
 	private int value;
 	private String name;
