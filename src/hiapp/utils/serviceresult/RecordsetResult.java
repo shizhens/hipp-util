@@ -76,7 +76,10 @@ public class RecordsetResult extends ServiceResult {
 			
 			Map<String, String> row = new HashMap<String, String>();
 			for (Map.Entry<String, JsonElement> ent : entrySet) {
-				row.put(ent.getKey(), ent.getValue().getAsString());
+				try {
+					row.put(ent.getKey(), ent.getValue().getAsString());
+				} catch (Exception e) {
+				}
 			}
 			this.getRows().add(row);
 		}
