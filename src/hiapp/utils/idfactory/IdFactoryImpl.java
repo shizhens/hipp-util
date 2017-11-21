@@ -4,6 +4,7 @@
 package hiapp.utils.idfactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,17 @@ class IdFactoryImpl implements IdFactory {
 		
 		return idGenerator.newId();
 	}
+	
+	@Override
+	public List<String> newIds(String idHead, int count) {
+		// TODO Auto-generated method stub
+		IdGenerator idGenerator = this.getIdGenerator(idHead);
+		if (null == idGenerator) {
+			return null;
+		}
+		
+		return idGenerator.newIds(count);
+	}
 
 	private synchronized IdGenerator getIdGenerator(String idHead) {
 		IdGenerator idGenerator = this.idGeneratorMap.get(idHead);
@@ -46,4 +58,5 @@ class IdFactoryImpl implements IdFactory {
 		}
 		return idGenerator;
 	}
+
 }

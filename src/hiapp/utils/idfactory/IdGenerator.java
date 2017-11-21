@@ -4,7 +4,9 @@
 package hiapp.utils.idfactory;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import hiapp.utils.idfactory.data.IdRepository;
 
@@ -42,7 +44,29 @@ public class IdGenerator {
 		id = this.getCurrentId();
 		this.setCurrentId(id + 1);
 		
-		return String.format("%s_%s_%d", this.getIdHead(), this.dataFmt.format(this.getDate()), id);
+		return generateId(id);//String.format("%s_%s_%d", this.getIdHead(), this.dataFmt.format(this.getDate()), id);
+	}
+	
+	public synchronized List<String> newIds(int count) {
+		List<String> ids = new ArrayList<String>();
+		
+		if (count < 1) {
+			return ids;
+		}
+		
+		if (this.getCurrentId() + count >= this.getMaxId()) {
+			if (!this.pullBatch(count)) {
+				return ids;
+			}
+		}
+		
+		int loopTimes = 0;
+		int id;
+		for (loopTimes = 0, id = this.getCurrentId(), this.setCurrentId(id + count); loopTimes < count; ++loopTimes) {
+			ids.add(generateId(id + loopTimes));
+		}
+		
+		return ids;
 	}
 	
 	public boolean pullBatch() {
@@ -72,5 +96,9 @@ public class IdGenerator {
 
 	public void setMaxId(int maxId) {
 		this.maxId = maxId;
+	}
+	
+	private String generateId(int id) {
+		return String.format("%s_%s_%d", this.getIdHead(), this.dataFmt.format(this.getDate()), id);
 	}
 }
