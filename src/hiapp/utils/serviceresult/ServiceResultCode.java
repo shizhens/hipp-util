@@ -17,7 +17,8 @@ public enum ServiceResultCode {
 	INVALID_AUTHORITY(10006, "没有权限"),
 	FILE_EXISTS(10007, "文件已存在"),
 	FILE_FAIL(10008, "操作文件失败"),
-	CUSTOMER_NONE(10009, "取不到客户");
+	CUSTOMER_NONE(10009, "取不到客户"),
+	INVALID_DATASERVICE(100010, "找不到数据服务");
 	
 	private int value;
 	private String name;
