@@ -23,10 +23,9 @@ import hiapp.utils.tenant.Tenant;
 @Service("tenantDBConnectionPool")
 @Qualifier("tenantDBConnectionPool")
 public class TenantDBConnectionPool implements DBConnectionPool {
-	@Autowired
-	private Tenant tenant;
+	private Tenant tenant = null;
 	
-	private HiAppContext appContext;
+	private HiAppContext appContext = null;
 	private BasicDataSource dataSource;
 	private String driverClassName;
 	private String dbConnectionUrl;
@@ -35,10 +34,23 @@ public class TenantDBConnectionPool implements DBConnectionPool {
 	private DatabaseType databaseType;
 	
 	@Autowired
-	public void setAppContext(HiAppContext appContext) {
+	private void setAppContext(HiAppContext appContext) {
 		// TODO Auto-generated method stub
 		this.appContext = appContext;
-
+		this.startup();
+	}
+	
+	@Autowired
+	private void setTenant(Tenant tenant) {
+		this.tenant = tenant;
+		this.startup();
+	}
+	
+	private void startup() {
+		if (null == this.appContext || null == this.tenant) {
+			return;
+		}
+		
 		String dbConnectionUrl = this.appContext.getServletContext().getInitParameter("dbConnectionUrl");
 		String dbConnectionUser = this.appContext.getServletContext().getInitParameter("dbConnectionUser");
 		String dbConnectionPassword = this.appContext.getServletContext().getInitParameter("dbConnectionPassword");
