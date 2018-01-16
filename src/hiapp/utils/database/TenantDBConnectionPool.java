@@ -7,8 +7,12 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.commons.dbcp.BasicDataSource;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -22,7 +26,7 @@ import hiapp.utils.tenant.Tenant;
  */
 @Service("tenantDBConnectionPool")
 @Qualifier("tenantDBConnectionPool")
-public class TenantDBConnectionPool implements DBConnectionPool {
+public class TenantDBConnectionPool extends Thread implements DBConnectionPool {
 	private Tenant tenant = null;
 	
 	private HiAppContext appContext = null;
@@ -32,6 +36,10 @@ public class TenantDBConnectionPool implements DBConnectionPool {
 	private String dbConnectionUser;
 	private String dbConnectionPassword;
 	private DatabaseType databaseType;
+	
+	@Autowired
+	private Logger logger;
+	private List<DBConnectionLogInfo> connectInfoList = Collections.synchronizedList(new ArrayList<DBConnectionLogInfo>());
 	
 	@Autowired
 	private void setAppContext(HiAppContext appContext) {
@@ -96,6 +104,7 @@ public class TenantDBConnectionPool implements DBConnectionPool {
 				}
 			}
         }
+		this.start();
 	}
 	
 	protected void initialize(String dbConnectionUrl, String dbConnectionUser, String dbConnectionPassword) {
@@ -138,10 +147,6 @@ public class TenantDBConnectionPool implements DBConnectionPool {
 			e.printStackTrace();
 		}
 	}
-	
-	public Connection getConnection() throws SQLException {
-		return this.dataSource.getConnection();
-	}
 
 	/**
 	 * @return the dbConnectionUrl
@@ -173,7 +178,14 @@ public class TenantDBConnectionPool implements DBConnectionPool {
 	
 	@Override
 	public Connection getDbConnection() throws SQLException {
-		return this.dataSource.getConnection();
+		Connection connection = this.dataSource.getConnection();
+		
+		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+		String invokerInfo = String.format("%s.%s", stackTraceElements[3].getClassName(), stackTraceElements[3].getMethodName());
+		synchronized(this.connectInfoList) {
+			this.connectInfoList.add(new DBConnectionLogInfo(connection, invokerInfo));
+		}
+		return connection;
 	}
 
 	/**
@@ -234,5 +246,32 @@ public class TenantDBConnectionPool implements DBConnectionPool {
 	 */
 	private void setDatabaseType(DatabaseType databaseType) {
 		this.databaseType = databaseType;
+	}
+	
+	/* (non-Javadoc)
+	 * @see java.lang.Thread#run()
+	 */
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		while (true) {
+			try {
+				Thread.sleep(5 * 60 * 1000);
+				synchronized(this.connectInfoList) {
+					logger.info("==================================================DBConnectionInfo=======================================");
+					for (int index = this.connectInfoList.size() - 1; index > 0; --index) {
+						DBConnectionLogInfo logInfo = this.connectInfoList.get(index);
+						int closeFlag = logInfo.isClosed();
+						logger.info(logInfo.getLogContent());
+						if (closeFlag == 1) {
+							this.connectInfoList.remove(index);
+						}
+					}
+				}
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 }
