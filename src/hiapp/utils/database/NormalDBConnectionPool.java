@@ -5,20 +5,27 @@ package hiapp.utils.database;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.commons.dbcp.BasicDataSource;
+
+import hiapp.utils.database.delegator.ConnectionDelegator;
+import hiapp.utils.database.delegator.ConnectionEventHandler;
 
 /**
  * @author zhangguanghao
  *
  */
-public class NormalDBConnectionPool implements DBConnectionPool {
+public class NormalDBConnectionPool implements DBConnectionPool, ConnectionEventHandler {
 	private BasicDataSource dataSource;
 	private String driverClassName;
 	private String dbConnectionUrl;
 	private String dbConnectionUser;
 	private String dbConnectionPassword;
 	private DatabaseType databaseType;
+	private Set<ConnectionDelegator> connectionDegelators = Collections.synchronizedSet(new HashSet<ConnectionDelegator>());
 
 	public NormalDBConnectionPool(String dbConnectionUrl, String dbConnectionUser, String dbConnectionPassword) {
 		setDbConnectionUrl(dbConnectionUrl);
@@ -49,8 +56,31 @@ public class NormalDBConnectionPool implements DBConnectionPool {
 	}
 	
 	@Override
-	public Connection getDbConnection() throws SQLException {
-		return this.dataSource.getConnection();
+	public Connection getDbConnection() {
+		try {
+			ConnectionDelegator connectionDelegator = this.getConnectionDelegator();
+			return connectionDelegator.getProxyObject();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	protected ConnectionDelegator getConnectionDelegator() throws SQLException {
+		Connection connection = this.dataSource.getConnection();
+		if (null == connection) {
+			return null;
+		}
+		
+		ConnectionDelegator connectionDelegator = new ConnectionDelegator(connection);
+		if (null != connectionDelegator) {
+			synchronized(this.connectionDegelators) {
+				connectionDelegator.setEventHandler(this);
+				this.connectionDegelators.add(connectionDelegator);
+			}
+		}
+		return connectionDelegator;
 	}
 
 	/**
@@ -111,5 +141,13 @@ public class NormalDBConnectionPool implements DBConnectionPool {
 	 */
 	private void setDatabaseType(DatabaseType databaseType) {
 		this.databaseType = databaseType;
+	}
+
+	@Override
+	public void onClose(ConnectionDelegator connectionDelegator) {
+		// TODO Auto-generated method stub
+		synchronized(this.connectionDegelators) {
+			this.connectionDegelators.remove(connectionDelegator);
+		}
 	}
 }

@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import hiapp.utils.base.HiAppContext;
+import hiapp.utils.database.delegator.ConnectionDelegator;
 import hiapp.utils.tenant.Tenant;
 
 /**
@@ -69,32 +70,51 @@ public class TenantDBConnectionPool extends Thread implements DBConnectionPool {
     	String tenantId = webRoot.substring(webRoot.lastIndexOf('/') + 1);
     	System.out.println(tenantId);
     	
+    	Statement statement = null;
 		Connection connection = null;
+		ResultSet resultSet = null;
 		try{
 			NormalDBConnectionPool sysDbConnectionConfig = 
 					new NormalDBConnectionPool(dbConnectionUrl, dbConnectionUser, dbConnectionPassword);
 			connection = sysDbConnectionConfig.getDbConnection();
-			Statement statement = connection.createStatement();
+			
 			String sql = "";
 			sql = String.format("SELECT TENANTID, CODE, NAME, COMPANYNAME, DBURL, DBUSER, DBPWD "
 					+ "FROM TENANTBASEINFO WHERE TENANTID='%s'", tenantId);
-		
-			ResultSet rs = statement.executeQuery(sql);
-			if (rs.next()) {
-				this.tenant.setId(rs.getString("TENANTID"));
-				this.tenant.setCode(rs.getString("CODE"));				
-				this.tenant.setName(rs.getString("NAME"));
-				this.tenant.setCompanyName(rs.getString("COMPANYNAME"));
+			statement = connection.prepareStatement(sql);
+			resultSet = statement.executeQuery(sql);
+			if (resultSet.next()) {
+				this.tenant.setId(resultSet.getString("TENANTID"));
+				this.tenant.setCode(resultSet.getString("CODE"));				
+				this.tenant.setName(resultSet.getString("NAME"));
+				this.tenant.setCompanyName(resultSet.getString("COMPANYNAME"));
 				this.tenant.setRootUrl(webRoot);
-				this.initialize(rs.getString("DBURL"), rs.getString("DBUSER"), rs.getString("DBPWD"));
+				this.initialize(resultSet.getString("DBURL"), resultSet.getString("DBUSER"), resultSet.getString("DBPWD"));
 			}
-			rs = null;
         } catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally{
+			if (null != resultSet) {
+				try {
+					resultSet.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
+			if (null != statement) {
+				try {
+					statement.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
 			if (null != connection) {
 				try {
 					connection.close();
@@ -179,13 +199,13 @@ public class TenantDBConnectionPool extends Thread implements DBConnectionPool {
 	@Override
 	public Connection getDbConnection() throws SQLException {
 		Connection connection = this.dataSource.getConnection();
-		
+		ConnectionDelegator connectionDelegator = new ConnectionDelegator(connection);
 		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 		String invokerInfo = String.format("%s.%s", stackTraceElements[3].getClassName(), stackTraceElements[3].getMethodName());
 		synchronized(this.connectInfoList) {
-			this.connectInfoList.add(new DBConnectionLogInfo(connection, invokerInfo));
+			this.connectInfoList.add(new DBConnectionLogInfo(connectionDelegator, invokerInfo));
 		}
-		return connection;
+		return connectionDelegator.getProxyObject();
 	}
 
 	/**

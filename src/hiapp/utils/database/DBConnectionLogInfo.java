@@ -3,10 +3,11 @@
  */
 package hiapp.utils.database;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import hiapp.utils.database.delegator.ConnectionDelegator;
 
 /**
  * @author zhang
@@ -14,14 +15,14 @@ import java.util.Date;
  */
 public class DBConnectionLogInfo {
 	private int hashCode;
-	private Connection connection;
+	private ConnectionDelegator connectionDelegator;
 	private String invokerInfo;
 	private Date time;
 	private String startTimeString;
 	
-	public DBConnectionLogInfo(Connection connection, String invokerInfo) {
-		this.connection = connection;
-		this.hashCode = this.connection.hashCode();
+	public DBConnectionLogInfo(ConnectionDelegator connectionDelegator, String invokerInfo) {
+		this.connectionDelegator = connectionDelegator;
+		this.hashCode = this.connectionDelegator.getProxyObject().hashCode();
 		this.invokerInfo = invokerInfo;
 		this.time = new Date();
 		
@@ -37,7 +38,7 @@ public class DBConnectionLogInfo {
 	
 	public int isClosed() {
 		try {
-			return this.connection.isClosed() ? 1 : 0;
+			return this.connectionDelegator.getProxyObject().isClosed() ? 1 : 0;
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
