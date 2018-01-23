@@ -3,6 +3,9 @@
  */
 package hiapp.utils.spring;
 
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
@@ -15,6 +18,19 @@ import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatche
 public abstract class HiAppWebAnnotationConfigDispatcherServletInitializer 
 		extends AbstractAnnotationConfigDispatcherServletInitializer {
 	protected static AnnotationConfigWebApplicationContext rootAppContext = new AnnotationConfigWebApplicationContext();
+	
+	/* (non-Javadoc)
+	 * @see org.springframework.web.servlet.support.AbstractDispatcherServletInitializer#onStartup(javax.servlet.ServletContext)
+	 */
+	@Override
+	public void onStartup(ServletContext servletContext) throws ServletException {
+		// TODO Auto-generated method stub
+		this.registerRootConfigClasses();
+	}
+
+	protected void doStartup(ServletContext servletContext) throws ServletException {
+		super.onStartup(servletContext);
+	}
 	
 	/**
 	 * {@inheritDoc}

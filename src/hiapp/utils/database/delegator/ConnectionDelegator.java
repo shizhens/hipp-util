@@ -10,6 +10,9 @@ import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * @author zhang
  *
@@ -42,12 +45,14 @@ public class ConnectionDelegator extends Delegator<Connection> {
 	 */
 	@Override
 	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+		Logger logger = LogManager.getLogger("hiapp");
 		// TODO Auto-generated method stub
 		switch (method.getName()) {
 		case "close":
 			for (StatementDelegator<?> statementDelegator : this.statements) {
 				if (null != statementDelegator && !statementDelegator.getProxyObject().isClosed()) {
 					statementDelegator.getProxyObject().close();
+					logger.debug("close statement by proxy");
 				}
 			}
 			this.onClose();
