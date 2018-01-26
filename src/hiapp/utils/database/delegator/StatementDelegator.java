@@ -35,18 +35,24 @@ public class StatementDelegator<T extends Statement> extends Delegator<T> {
 		case "close":
 			for (ResultSet resultSet : this.recordSets) {
 				if (null != resultSet && !resultSet.isClosed()) {
-					resultSet.close();
-					logger.debug("close resultSet by proxy");
+					try {
+						resultSet.close();
+						logger.debug("close resultSet by proxy");
+					} catch (Exception ex) {
+						logger.debug(String.format("close resultSet by proxy; exception; %s", ex.getMessage()));
+					}
 				}
 			}
 			return super.invoke(proxy, method, args);
 			
 		case "executeQuery":
+		case "getGeneratedKeys":
 			ResultSet resultSet = (ResultSet) super.invoke(proxy, method, args);
 			if (null != resultSet) {
 				recordSets.add(resultSet);
 			}
 			return resultSet;
+			
 		default:
 			return super.invoke(proxy, method, args);
 		}

@@ -4,6 +4,7 @@
 package hiapp.utils.database;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -12,6 +13,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.dbcp.BasicDataSource;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -38,8 +40,6 @@ public class TenantDBConnectionPool extends Thread implements DBConnectionPool {
 	private String dbConnectionPassword;
 	private DatabaseType databaseType;
 	
-	@Autowired
-	private Logger logger;
 	private List<DBConnectionLogInfo> connectInfoList = Collections.synchronizedList(new ArrayList<DBConnectionLogInfo>());
 	
 	@Autowired
@@ -70,7 +70,7 @@ public class TenantDBConnectionPool extends Thread implements DBConnectionPool {
     	String tenantId = webRoot.substring(webRoot.lastIndexOf('/') + 1);
     	System.out.println(tenantId);
     	
-    	Statement statement = null;
+    	PreparedStatement statement = null;
 		Connection connection = null;
 		ResultSet resultSet = null;
 		try{
@@ -78,11 +78,10 @@ public class TenantDBConnectionPool extends Thread implements DBConnectionPool {
 					new NormalDBConnectionPool(dbConnectionUrl, dbConnectionUser, dbConnectionPassword);
 			connection = sysDbConnectionConfig.getDbConnection();
 			
-			String sql = "";
-			sql = String.format("SELECT TENANTID, CODE, NAME, COMPANYNAME, DBURL, DBUSER, DBPWD "
+			String sql = String.format("SELECT TENANTID, CODE, NAME, COMPANYNAME, DBURL, DBUSER, DBPWD "
 					+ "FROM TENANTBASEINFO WHERE TENANTID='%s'", tenantId);
 			statement = connection.prepareStatement(sql);
-			resultSet = statement.executeQuery(sql);
+			resultSet = statement.executeQuery();
 			if (resultSet.next()) {
 				this.tenant.setId(resultSet.getString("TENANTID"));
 				this.tenant.setCode(resultSet.getString("CODE"));				
@@ -274,6 +273,7 @@ public class TenantDBConnectionPool extends Thread implements DBConnectionPool {
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
+		Logger logger = LogManager.getLogger("dbpool");
 		while (true) {
 			try {
 				Thread.sleep(5 * 60 * 1000);

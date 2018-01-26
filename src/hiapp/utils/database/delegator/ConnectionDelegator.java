@@ -4,6 +4,7 @@
 package hiapp.utils.database.delegator;
 
 import java.lang.reflect.Method;
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -12,6 +13,8 @@ import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import hiapp.utils.database.delegator.recorder.DBDelegatorRecorder;
 
 /**
  * @author zhang
@@ -51,11 +54,21 @@ public class ConnectionDelegator extends Delegator<Connection> {
 		case "close":
 			for (StatementDelegator<?> statementDelegator : this.statements) {
 				if (null != statementDelegator && !statementDelegator.getProxyObject().isClosed()) {
-					statementDelegator.getProxyObject().close();
-					logger.debug("close statement by proxy");
+					int hashCode = statementDelegator.getRealObject().hashCode();
+					try {
+						statementDelegator.getProxyObject().close();
+						logger.debug(String.format("close statement by proxy; HASH=%d; %s;", hashCode, statementDelegator.getRealObject().getClass().toString()));
+					} catch (Exception ex) {
+						logger.debug(String.format("close statement by proxy; exception; HASH=%d; %s; %s", hashCode, statementDelegator.getClass().toString(), ex.getMessage()));
+					}
 				}
 			}
-			this.onClose();
+			
+			try {
+				this.onClose();
+			} catch (Exception ex) {
+				logger.debug(String.format("close statement by proxy; exception; %s", ex.getMessage()));
+			}
 			return super.invoke(proxy, method, args);
 			
 		case "createStatement":
@@ -63,6 +76,7 @@ public class ConnectionDelegator extends Delegator<Connection> {
 			if (null != statement) {
 				StatementDelegator<Statement> statementDelegator = new StatementDelegator<Statement>(statement);
 				this.statements.add(statementDelegator);
+				DBDelegatorRecorder.addDelegator(statementDelegator);
 				return statementDelegator.getProxyObject();
 			} else {
 				return null;
@@ -73,6 +87,18 @@ public class ConnectionDelegator extends Delegator<Connection> {
 			if (null != preparedStatement) {
 				StatementDelegator<PreparedStatement> statementDelegator = new StatementDelegator<PreparedStatement>(preparedStatement);
 				this.statements.add(statementDelegator);
+				DBDelegatorRecorder.addDelegator(statementDelegator);
+				return statementDelegator.getProxyObject();
+			} else {
+				return null;
+			}
+			
+		case "prepareCall":
+			CallableStatement callableStatement = (CallableStatement) super.invoke(proxy, method, args);
+			if (null != callableStatement) {
+				StatementDelegator<CallableStatement> statementDelegator = new StatementDelegator<CallableStatement>(callableStatement);
+				this.statements.add(statementDelegator);
+				DBDelegatorRecorder.addDelegator(statementDelegator);
 				return statementDelegator.getProxyObject();
 			} else {
 				return null;

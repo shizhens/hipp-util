@@ -4,6 +4,7 @@
 package hiapp.utils.idfactory.data;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -23,54 +24,51 @@ import hiapp.utils.idfactory.IdGenerator;
 public class IdRepository extends BaseRepository {
 	
 	public IdGenerator getIdGenerator(String idHead) {
-		Connection dbConnection = null;
+		Connection connection = null;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		IdGenerator idGenerator = null;
 		try {
-			dbConnection = this.getDbConnection();
-			Statement statement = dbConnection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
-			String sql = "";
-			sql = String.format("SELECT IDHEAD, IDDATE FROM HASYS_ID_IDHEAD WHERE IDHEAD='%s'", idHead);
-			ResultSet rs = statement.executeQuery(sql);
-			if (rs.next()) {
+			connection = this.getDbConnection();
+			String sql = String.format("SELECT IDHEAD, IDDATE FROM HASYS_ID_IDHEAD WHERE IDHEAD='%s'", idHead);
+			statement = connection.prepareStatement(sql);
+			resultSet = statement.executeQuery();
+			if (resultSet.next()) {
 				idGenerator = new IdGenerator(this, idHead);
 			}
-			rs.close();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
-			if (dbConnection != null) {
-				try {
-					dbConnection.close();
-				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
+			this.closeResultSet(resultSet);
+			this.closeStatement(statement);
+			this.closeConnection(connection);
 		}
 		
 		return idGenerator;
 	}
 	
 	public boolean pullBatchIds(IdGenerator idGenerator, int batchSize) {
-		Connection dbConnection = null;
+		Connection connection = null;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		try {
 			SimpleDateFormat dateFmt = new SimpleDateFormat("yyyy-MM-dd");
 			Date seedDate = null;
 			int pullBatchSize = batchSize;
 			int idSeed = 1;
 			
-			dbConnection = this.getDbConnection();
-			Statement statement = dbConnection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
-			String sql = "";
-			sql = String.format("SELECT BATCHSIZE, IDDATE, IDSEED FROM HASYS_ID_IDHEAD WHERE IDHEAD='%s'", idGenerator.getIdHead());
-			ResultSet rs = statement.executeQuery(sql);
-			if (rs.next()) {
-				pullBatchSize = rs.getInt("BATCHSIZE");
-				seedDate = rs.getDate("IDDATE");
-				idSeed = rs.getInt("IDSEED");
+			connection = this.getDbConnection();
+			String sql = String.format("SELECT BATCHSIZE, IDDATE, IDSEED FROM HASYS_ID_IDHEAD WHERE IDHEAD='%s'", idGenerator.getIdHead());
+			statement = connection.prepareStatement(sql);
+			resultSet = statement.executeQuery();
+			if (resultSet.next()) {
+				pullBatchSize = resultSet.getInt("BATCHSIZE");
+				seedDate = resultSet.getDate("IDDATE");
+				idSeed = resultSet.getInt("IDSEED");
 			}
-			rs.close();
+			this.closeResultSet(resultSet);
+			resultSet = null;
 			
 			if (seedDate == null) {
 				return false;
@@ -97,14 +95,9 @@ public class IdRepository extends BaseRepository {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
-			if (dbConnection != null) {
-				try {
-					dbConnection.close();
-				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
+			this.closeResultSet(resultSet);
+			this.closeStatement(statement);
+			this.closeConnection(connection);
 		}
 		
 		return false;

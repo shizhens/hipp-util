@@ -25,7 +25,7 @@ public class Delegator<T> implements InvocationHandler {
 		return this.proxyObject;
 	}
 	
-	protected T getRealObject() {
+	public T getRealObject() {
 		return this.realObject;
 	}
 
