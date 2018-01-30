@@ -10,7 +10,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.logging.log4j.LogManager;
@@ -39,6 +41,7 @@ public class TenantDBConnectionPool extends Thread implements DBConnectionPool {
 	private String dbConnectionUser;
 	private String dbConnectionPassword;
 	private DatabaseType databaseType;
+	private Map<String, NormalDBConnectionPool> externalDBConnectionPools = Collections.synchronizedMap(new HashMap<String, NormalDBConnectionPool>());
 	
 	private List<DBConnectionLogInfo> connectInfoList = Collections.synchronizedList(new ArrayList<DBConnectionLogInfo>());
 	
@@ -156,6 +159,8 @@ public class TenantDBConnectionPool extends Thread implements DBConnectionPool {
 		this.dataSource.setMaxActive(100);
 		this.dataSource.setMaxIdle(10);
 		this.dataSource.setPoolPreparedStatements(true);
+		
+		this.loadExternalDBConnection();
 	}
 	
 	public void destory() {
@@ -265,6 +270,96 @@ public class TenantDBConnectionPool extends Thread implements DBConnectionPool {
 	 */
 	private void setDatabaseType(DatabaseType databaseType) {
 		this.databaseType = databaseType;
+	}
+	
+	public Connection getDbConnection(String id) {
+		NormalDBConnectionPool dbConnectionPool = this.getExternalDBConnectionPool(id);
+		return (null != dbConnectionPool) ? dbConnectionPool.getDbConnection() : null;
+	}
+	
+	public DatabaseType getDatabaseType(String id) {
+		NormalDBConnectionPool dbConnectionPool = this.getExternalDBConnectionPool(id);
+		return (null != dbConnectionPool) ? dbConnectionPool.getDatabaseType() : null;
+	}
+	
+	public void refreshExternalDBConnection() {
+		this.loadExternalDBConnection();
+	}
+	
+	private NormalDBConnectionPool getExternalDBConnectionPool(String id) {
+		synchronized(this.externalDBConnectionPools) {
+			NormalDBConnectionPool dbConnectionPool = this.externalDBConnectionPools.get(id);
+			if (null != dbConnectionPool) {
+				loadExternalDBConnection();
+				dbConnectionPool = this.externalDBConnectionPools.get(id);
+			}
+			return dbConnectionPool;
+		}
+	}
+	
+	private void loadExternalDBConnection() {
+		Connection connection = null;
+    	PreparedStatement statement = null;
+		ResultSet resultSet = null;
+		try{
+			connection = this.getDbConnection();
+			String sql = String.format("SELECT ID, DBURL, DBUSER, DBPWD FROM APP_CFG_DBCONN");
+			statement = connection.prepareStatement(sql);
+			resultSet = statement.executeQuery();
+			synchronized(this.externalDBConnectionPools) {
+				while (resultSet.next()) {
+					String id = resultSet.getString("ID");
+					String dbUrl = resultSet.getString("DBURL");
+					String dbUser = resultSet.getString("DBUSER");
+					String dbPwd = resultSet.getString("DBPWD");
+					
+					NormalDBConnectionPool dbConnectionPool = this.externalDBConnectionPools.get(id);
+					if (null != dbConnectionPool) {
+						if (dbConnectionPool.getDbConnectionUrl() == dbUrl && dbConnectionPool.getDbConnectionUser() == dbUser
+								&& dbConnectionPool.getDbConnectionPassword() == dbPwd) {
+							continue;
+						}
+					}
+					
+					dbConnectionPool = new NormalDBConnectionPool(dbUrl, dbUser, dbPwd);
+					this.externalDBConnectionPools.put(id, dbConnectionPool);
+				}
+			}
+
+        } catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally{
+			if (null != resultSet) {
+				try {
+					resultSet.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
+			if (null != statement) {
+				try {
+					statement.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
+			if (null != connection) {
+				try {
+					connection.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+        }
+		
 	}
 	
 	/* (non-Javadoc)

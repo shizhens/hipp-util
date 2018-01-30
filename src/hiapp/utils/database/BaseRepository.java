@@ -11,14 +11,22 @@ import org.springframework.beans.factory.annotation.Qualifier;
 public abstract class BaseRepository {
 	@Autowired
 	@Qualifier("tenantDBConnectionPool")
-	private DBConnectionPool dbConnectionPool;
+	private TenantDBConnectionPool dbConnectionPool;
 	
 	protected Connection getDbConnection() throws SQLException {
 		return this.dbConnectionPool.getDbConnection();
 	}
 	
+	protected Connection getDbConnection(String externalConnectionId) throws SQLException {
+		return this.dbConnectionPool.getDbConnection(externalConnectionId);
+	}
+	
 	protected DatabaseType getDatabaseType() {
 		return this.dbConnectionPool.getDatabaseType();
+	}
+	
+	protected DatabaseType getDatabaseType(String externalConnectionId) {
+		return this.dbConnectionPool.getDatabaseType(externalConnectionId);
 	}
 	
 	protected void closeConnection(Connection connection){

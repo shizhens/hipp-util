@@ -18,7 +18,8 @@ public enum ServiceResultCode {
 	FILE_EXISTS(10007, "文件已存在"),
 	FILE_FAIL(10008, "操作文件失败"),
 	CUSTOMER_NONE(10009, "取不到客户"),
-	INVALID_DATASERVICE(100010, "找不到数据服务");
+	INVALID_DATASERVICE(100010, "找不到数据服务"),
+	INVALID_DBCONNECTION(100011, "数据库连接参数不正确");
 	
 	private int value;
 	private String name;
