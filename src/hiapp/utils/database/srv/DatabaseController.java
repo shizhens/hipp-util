@@ -21,7 +21,7 @@ public class DatabaseController {
 	@Autowired
 	private TenantDBConnectionPool dbConnectionPool;
 	
-	@RequestMapping(value="/srv/db/refreshExternalDBConnection.srv", method=RequestMethod.GET, produces="text/plain")
+	@RequestMapping(value="/srv/db/refreshExternalDBConnection.srv", method= { RequestMethod.GET, RequestMethod.POST }, produces="text/plain")
 	public ServiceResult refreshExternalDBConnection() {
 		ServiceResult result = new ServiceResult();
 		
