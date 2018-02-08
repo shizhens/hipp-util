@@ -3,11 +3,13 @@
  */
 package hiapp.utils.tenant;
 
+import java.io.Serializable;
+
 /**
  * @author zhang
  *
  */
-public interface Tenant {
+public interface Tenant extends Serializable {
 	void cloneTo(Tenant tenant);
 	
 	/**
