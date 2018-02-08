@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
  */
 @Component("tenant")
 public class TenantImpl implements Tenant {
+	private static final long serialVersionUID = -5332294355315810787L;
+	
 	private String id;
 	private String code;
 	private String name;
