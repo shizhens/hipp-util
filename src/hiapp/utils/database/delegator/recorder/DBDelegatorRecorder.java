@@ -22,6 +22,7 @@ public class DBDelegatorRecorder extends Thread {
 	private static List<DelegatorInfo> delegatorInfoList = Collections.synchronizedList(new ArrayList<DelegatorInfo>());
 
 	public DBDelegatorRecorder() {
+		super("DBDelegatorRecorder-Thread");
 		this.start();
 	}
 	

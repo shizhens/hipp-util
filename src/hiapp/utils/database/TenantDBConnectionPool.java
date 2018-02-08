@@ -45,6 +45,9 @@ public class TenantDBConnectionPool extends Thread implements DBConnectionPool {
 	
 	private List<DBConnectionLogInfo> connectInfoList = Collections.synchronizedList(new ArrayList<DBConnectionLogInfo>());
 	
+	public TenantDBConnectionPool() {
+		super("TenantDBConnectionPool-Record-Pool");
+	}
 	@Autowired
 	private void setAppContext(HiAppContext appContext) {
 		// TODO Auto-generated method stub
