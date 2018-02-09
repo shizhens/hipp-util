@@ -8,10 +8,13 @@ import java.io.File;
 import javax.servlet.ServletContext;
 
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.WebApplicationContext;
+
+import hiapp.utils.tenant.Tenant;
 
 /**
  * @author zhang
@@ -19,6 +22,9 @@ import org.springframework.web.context.WebApplicationContext;
  */
 @Service("appContext")
 public class HiAppContext implements ApplicationContextAware {
+	@Autowired
+	private Tenant tenant;
+	
 	private WebApplicationContext webApplicationContext;
 	private ServletContext servletContext; 
 
@@ -38,6 +44,13 @@ public class HiAppContext implements ApplicationContextAware {
 
 	public ServletContext getServletContext() {
 		return servletContext;
+	}
+
+	/**
+	 * @return the tenant
+	 */
+	public Tenant getTenant() {
+		return tenant;
 	}
 
 	public String convertToRealPath(String fileName) {
