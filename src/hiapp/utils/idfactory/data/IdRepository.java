@@ -7,14 +7,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import hiapp.utils.database.BaseRepository;
 import hiapp.utils.idfactory.IdGenerator;
+import hiapp.utils.idfactory.IdHeadData;
+import redis.clients.jedis.JedisPool;
 
 /**
  * @author zhang
@@ -22,7 +22,9 @@ import hiapp.utils.idfactory.IdGenerator;
  */
 @Repository
 public class IdRepository extends BaseRepository {
-	
+	@Autowired
+	private JedisPool jedisPool;
+
 	public IdGenerator getIdGenerator(String idHead) {
 		Connection connection = null;
 		PreparedStatement statement = null;
@@ -30,11 +32,12 @@ public class IdRepository extends BaseRepository {
 		IdGenerator idGenerator = null;
 		try {
 			connection = this.getDbConnection();
-			String sql = String.format("SELECT IDHEAD, IDDATE FROM HASYS_ID_IDHEAD WHERE IDHEAD='%s'", idHead);
+			String sql = "SELECT BATCHSIZE FROM HASYS_ID_IDHEAD WHERE IDHEAD=?";
 			statement = connection.prepareStatement(sql);
+			statement.setString(1, idHead);
 			resultSet = statement.executeQuery();
 			if (resultSet.next()) {
-				idGenerator = new IdGenerator(this, idHead);
+				idGenerator = new IdGenerator(this, idHead, resultSet.getInt("BATCHSIZE"), jedisPool);
 			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -48,54 +51,54 @@ public class IdRepository extends BaseRepository {
 		return idGenerator;
 	}
 	
-	public boolean pullBatchIds(IdGenerator idGenerator, int batchSize) {
+	public IdHeadData getIdHeadData(String idHead) {
 		Connection connection = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		try {
-			SimpleDateFormat dateFmt = new SimpleDateFormat("yyyy-MM-dd");
-			Date seedDate = null;
-			int pullBatchSize = batchSize;
-			int idSeed = 1;
-			
+		IdHeadData idHeadData = null;
+		try {			
 			connection = this.getDbConnection();
-			String sql = String.format("SELECT BATCHSIZE, IDDATE, IDSEED FROM HASYS_ID_IDHEAD WHERE IDHEAD='%s'", idGenerator.getIdHead());
+			String sql = "SELECT BATCHSIZE, IDDATE, IDSEED FROM HASYS_ID_IDHEAD WHERE IDHEAD=?";
 			statement = connection.prepareStatement(sql);
+			statement.setString(1, idHead);
 			resultSet = statement.executeQuery();
 			if (resultSet.next()) {
-				pullBatchSize = resultSet.getInt("BATCHSIZE");
-				seedDate = resultSet.getDate("IDDATE");
-				idSeed = resultSet.getInt("IDSEED");
+				idHeadData = new IdHeadData();
+				idHeadData.setIdHead(idHead);
+				idHeadData.setBatchSize(resultSet.getInt("BATCHSIZE"));
+				idHeadData.setSeedDate(resultSet.getDate("IDDATE"));
+				idHeadData.setSeed(resultSet.getInt("IDSEED"));
 			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			idHeadData = null;
+			e.printStackTrace();
+		} finally {
 			this.closeResultSet(resultSet);
-			resultSet = null;
-			
-			if (seedDate == null) {
-				return false;
-			}
-			
-			int maxId = 0;
-			if (dateFmt.format(seedDate).compareTo(dateFmt.format(idGenerator.getDate())) != 0) {
-				seedDate = idGenerator.getDate();
-				idSeed = 1;
-			}
-			
-			if (batchSize > 0) {
-				pullBatchSize = batchSize;
-			}
-			maxId = idSeed + pullBatchSize;
-			
-			sql = String.format("UPDATE HASYS_ID_IDHEAD SET IDDATE=TO_DATE('%s','YYYY-MM-DD'), IDSEED=%d WHERE IDHEAD='%s'"
-					, dateFmt.format(seedDate), maxId, idGenerator.getIdHead());
-			statement.execute(sql);
-			idGenerator.setCurrentId(idSeed);
-			idGenerator.setMaxId(maxId - 1);
+			this.closeStatement(statement);
+			this.closeConnection(connection);
+		}
+		
+		return idHeadData;
+	}
+	
+	public boolean updateBatchIds(IdHeadData idHeadData) {
+		SimpleDateFormat dateFmt = new SimpleDateFormat("yyyy-MM-dd");
+		Connection connection = null;
+		PreparedStatement statement = null;
+		try {			
+			connection = this.getDbConnection();			
+			String sql = "UPDATE HASYS_ID_IDHEAD SET IDDATE=TO_DATE(?,'YYYY-MM-DD'), IDSEED=? WHERE IDHEAD=?";
+			statement = connection.prepareStatement(sql);
+			statement.setString(1, dateFmt.format(idHeadData.getSeedDate()));
+			statement.setInt(2, idHeadData.getSeed());
+			statement.setString(3, idHeadData.getIdHead());
+			statement.executeUpdate();
 			return true;
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
-			this.closeResultSet(resultSet);
 			this.closeStatement(statement);
 			this.closeConnection(connection);
 		}
