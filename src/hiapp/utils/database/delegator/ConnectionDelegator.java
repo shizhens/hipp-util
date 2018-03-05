@@ -57,9 +57,9 @@ public class ConnectionDelegator extends Delegator<Connection> {
 					int hashCode = statementDelegator.getRealObject().hashCode();
 					try {
 						statementDelegator.getProxyObject().close();
-						logger.debug(String.format("close statement by proxy; HASH=%d; %s;", hashCode, statementDelegator.getRealObject().getClass().toString()));
+						//logger.debug(String.format("close statement by proxy; HASH=%d; %s;", hashCode, statementDelegator.getRealObject().getClass().toString()));
 					} catch (Exception ex) {
-						logger.debug(String.format("close statement by proxy; exception; HASH=%d; %s; %s", hashCode, statementDelegator.getClass().toString(), ex.getMessage()));
+						//logger.debug(String.format("close statement by proxy; exception; HASH=%d; %s; %s", hashCode, statementDelegator.getClass().toString(), ex.getMessage()));
 					}
 				}
 			}

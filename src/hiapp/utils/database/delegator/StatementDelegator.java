@@ -37,9 +37,9 @@ public class StatementDelegator<T extends Statement> extends Delegator<T> {
 				if (null != resultSet && !resultSet.isClosed()) {
 					try {
 						resultSet.close();
-						logger.debug("close resultSet by proxy");
+						//logger.debug("close resultSet by proxy");
 					} catch (Exception ex) {
-						logger.debug(String.format("close resultSet by proxy; exception; %s", ex.getMessage()));
+						//logger.debug(String.format("close resultSet by proxy; exception; %s", ex.getMessage()));
 					}
 				}
 			}

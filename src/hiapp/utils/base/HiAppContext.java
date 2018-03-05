@@ -53,6 +53,9 @@ public class HiAppContext implements ApplicationContextAware {
 		return tenant;
 	}
 
+	/*
+	 * 讲站点相对路径转换为本地存储的绝对路径。
+	 */
 	public String convertToRealPath(String fileName) {
 		String websiteRealPath = this.getServletContext().getRealPath("/");
 		String tenantRoot = this.getServletContext().getContextPath();
@@ -68,5 +71,20 @@ public class HiAppContext implements ApplicationContextAware {
 		realPath = realPath.replace(File.separator + File.separator, File.separator);
 		
 		return realPath;
+	}
+	
+	/*
+	 * 将本地存储的绝对路径转换为站点相对路径。
+	 */
+	public String convertFromRealPath(String realPath) {
+		String websiteRealPath = this.getServletContext().getRealPath("/");
+		
+		String relativePath = "";
+		relativePath = realPath.replace(websiteRealPath, "");
+		relativePath = relativePath.replace("\\", "/");
+		if (!relativePath.startsWith("/")) {
+			relativePath = "/" + relativePath;
+		}
+		return relativePath;
 	}
 }
