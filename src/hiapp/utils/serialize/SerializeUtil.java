@@ -50,7 +50,7 @@ public class SerializeUtil {
      * @param bytes
      * @return
      */
-    public static Object unserialize(byte[] bytes) { 
+    public static Object unserialize(byte[] bytes) {
         Object obj = null; 
         ByteArrayInputStream bais = null;  
         try {  
@@ -63,6 +63,6 @@ public class SerializeUtil {
         } catch (Exception e) {  
             e.printStackTrace();  
         }  
-        return obj;  
+        return obj;
     }
 }

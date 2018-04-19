@@ -22,6 +22,7 @@ public class UtilsRootConfig {
 		JedisPool jedisPool = null;
 		try {
 			JedisPoolConfig config = new JedisPoolConfig();
+			config.setMaxTotal(1024);
 			config.setMaxIdle(200);
 			config.setMaxWaitMillis(10000);
 			config.setTestOnBorrow(true);
